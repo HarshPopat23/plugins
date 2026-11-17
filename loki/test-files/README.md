@@ -14,11 +14,13 @@ Wait until HEADLAMP_HISTORY_EVIDENCE messages appear before deleting the Pod:
 marker and time range retrieved after deletion. Save screenshots before/after.
 
 Authorization checks (run as a cluster admin with impersonation permission):
+
 ```sh
 kubectl --as=system:serviceaccount:logging:history-reader get --raw '/api/v1/namespaces/logging/services/http:loki-gateway:80/proxy/loki/api/v1/query_range?query=%7Bcluster%3D%22evaluation-a%22%7D&limit=1'
 kubectl --as=system:serviceaccount:logging:history-denied get --raw '/api/v1/namespaces/logging/services/http:loki-gateway:80/proxy/loki/api/v1/query_range?query=%7Bcluster%3D%22evaluation-a%22%7D&limit=1'
 kubectl --as=system:serviceaccount:logging:history-reader get --raw '/api/v1/namespaces/logging/services/http:loki-gateway:80/proxy/loki/api/v1/push'
 ```
+
 The reader query should succeed, the unbound identity should receive Kubernetes
 403, and the forbidden gateway path should receive upstream 403. Test the
 same access using actual Headlamp login credentials before claiming live UI
@@ -33,3 +35,8 @@ These commands are test instructions, not evidence that the tests have run.
 Record: Headlamp, Kubernetes, Loki and collector versions; context names; unique
 markers; query windows; HTTP statuses; requested limits; rows rendered; requests
 per action. Cleanup with `kubectl delete -f emitter.yaml -f evaluation.yaml`.
+
+For contextual workload evaluation, continue with [CONTEXTUAL.md](CONTEXTUAL.md).
+The collector also copies explicit fixture Pod-template ownership labels; it does
+not discover Deployment ownership by parsing Pod names. Existing emitter and Pod
+history evaluation require no new mappings.

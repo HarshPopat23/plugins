@@ -1,5 +1,8 @@
 import { registerRoute, registerSidebarEntry } from '@kinvolk/headlamp-plugin/lib';
+import { registerHistoricalActions } from './components/HistoryAction';
 import SearchView from './components/SearchView';
+
+registerHistoricalActions();
 
 registerSidebarEntry({
   parent: null,

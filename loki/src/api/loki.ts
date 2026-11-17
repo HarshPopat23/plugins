@@ -11,6 +11,13 @@ export interface Datasource {
   namespaceLabel: string;
   podLabel: string;
   containerLabel: string;
+  workloadKindLabel?: string;
+  workloadNameLabel?: string;
+  workloadUidLabel?: string;
+  podUidLabel?: string;
+  grafanaUrl?: string;
+  grafanaDatasourceUid?: string;
+  grafanaOrgId?: string;
 }
 export const defaults: Datasource = {
   namespace: 'logging',
@@ -21,6 +28,13 @@ export const defaults: Datasource = {
   namespaceLabel: 'namespace',
   podLabel: 'pod',
   containerLabel: 'container',
+  workloadKindLabel: '',
+  workloadNameLabel: '',
+  workloadUidLabel: '',
+  podUidLabel: '',
+  grafanaUrl: '',
+  grafanaDatasourceUid: '',
+  grafanaOrgId: '',
 };
 export interface Search {
   namespace: string;
@@ -29,6 +43,9 @@ export interface Search {
   text: string;
   start: number;
   end: number;
+  workloadKind?: string;
+  workloadName?: string;
+  resourceUid?: string;
 }
 
 export function parseAbsoluteTimestamp(value: string): number {
@@ -81,10 +98,23 @@ export function validateDatasource(config: Datasource) {
   for (const key of ['clusterLabel', 'namespaceLabel', 'podLabel', 'containerLabel'] as const) {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(config[key])) throw new Error('Invalid Loki label name.');
   }
-  if (
-    new Set([config.clusterLabel, config.namespaceLabel, config.podLabel, config.containerLabel])
-      .size !== 4
-  ) {
+  const mappings = [
+    config.clusterLabel,
+    config.namespaceLabel,
+    config.podLabel,
+    config.containerLabel,
+  ];
+  for (const label of [
+    config.workloadKindLabel,
+    config.workloadNameLabel,
+    config.workloadUidLabel,
+    config.podUidLabel,
+  ]) {
+    if (!label) continue;
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(label)) throw new Error('Invalid Loki label name.');
+    mappings.push(label);
+  }
+  if (new Set(mappings).size !== mappings.length) {
     throw new Error('Each label mapping must be distinct.');
   }
   if (!config.clusterValue.trim())
@@ -100,6 +130,28 @@ export function query(config: Datasource, search: Search): string {
   ];
   if (search.pod) pairs.push([config.podLabel, search.pod]);
   if (search.container) pairs.push([config.containerLabel, search.container]);
+  if (search.workloadKind || search.workloadName) {
+    if (!search.workloadKind || !search.workloadName)
+      throw new Error('Enter both a workload kind and an exact workload name.');
+    if (!['Deployment', 'StatefulSet', 'DaemonSet', 'Job'].includes(search.workloadKind))
+      throw new Error('Unsupported historical workload kind.');
+    if (!config.workloadKindLabel || !config.workloadNameLabel)
+      throw new Error(
+        'Configure recorded workload kind and name labels before searching workload history. No historical ownership is inferred from current Pods.'
+      );
+    pairs.push(
+      [config.workloadKindLabel, search.workloadKind],
+      [config.workloadNameLabel, search.workloadName]
+    );
+  }
+  if (search.resourceUid) {
+    if (!search.workloadName && !search.pod)
+      throw new Error('A resource UID requires a Pod or workload name.');
+    const label = search.workloadName ? config.workloadUidLabel : config.podUidLabel;
+    if (!label)
+      throw new Error('Configure the recorded UID label before filtering by resource UID.');
+    pairs.push([label, search.resourceUid]);
+  }
   return (
     '{' +
     pairs.map(([k, v]) => k + '=' + JSON.stringify(v)).join(',') +

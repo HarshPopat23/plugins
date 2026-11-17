@@ -12,6 +12,7 @@ vi.mock('@kinvolk/headlamp-plugin/lib', () => ({
 beforeEach(() => {
   request.mockReset();
   localStorage.clear();
+  sessionStorage.clear();
   localStorage.setItem(
     'headlamp.loki.datasources.v1',
     JSON.stringify({ a: { ...defaults, clusterValue: 'a' }, b: { ...defaults, clusterValue: 'b' } })
