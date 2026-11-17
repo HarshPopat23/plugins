@@ -173,6 +173,22 @@ data:
         target_label = "container"
       }
       rule {
+        source_labels = ["__meta_kubernetes_pod_uid"]
+        target_label = "pod_uid"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_headlamp_dev_history_kind"]
+        target_label = "workload_kind"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_headlamp_dev_history_name"]
+        target_label = "workload_name"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_headlamp_dev_history_uid"]
+        target_label = "workload_uid"
+      }
+      rule {
         replacement = "evaluation-a"
         target_label = "cluster"
       }

@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: history-deployment
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        app: history-deployment
+        headlamp.dev/history-kind: Deployment
+        headlamp.dev/history-name: history-deployment
+    spec:
+      containers:
+        - name: emitter
+          image: busybox:1.37.0
+          env:
+            - name: GENERATION
+              value: v1
+          command:
+            - sh
+            - -c
+            - i=0; while [ "$i" -lt 600 ]; do echo "CONTEXT_HISTORY
+              kind=Deployment workload=history-deployment generation=$GENERATION
+              pod=$HOSTNAME utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) sequence=$i";
+              i=$((i+1)); sleep 2; done
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: history-deployment
+  replicas: 2
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: history-statefulset
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        app: history-statefulset
+        headlamp.dev/history-kind: StatefulSet
+        headlamp.dev/history-name: history-statefulset
+    spec:
+      containers:
+        - name: emitter
+          image: busybox:1.37.0
+          env:
+            - name: GENERATION
+              value: v1
+          command:
+            - sh
+            - -c
+            - i=0; while [ "$i" -lt 600 ]; do echo "CONTEXT_HISTORY
+              kind=StatefulSet workload=history-statefulset
+              generation=$GENERATION pod=$HOSTNAME utc=$(date -u
+              +%Y-%m-%dT%H:%M:%SZ) sequence=$i"; i=$((i+1)); sleep 2; done
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: history-statefulset
+  replicas: 1
+  serviceName: history-statefulset
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: history-daemonset
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        app: history-daemonset
+        headlamp.dev/history-kind: DaemonSet
+        headlamp.dev/history-name: history-daemonset
+    spec:
+      containers:
+        - name: emitter
+          image: busybox:1.37.0
+          env:
+            - name: GENERATION
+              value: v1
+          command:
+            - sh
+            - -c
+            - i=0; while [ "$i" -lt 600 ]; do echo "CONTEXT_HISTORY
+              kind=DaemonSet workload=history-daemonset generation=$GENERATION
+              pod=$HOSTNAME utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) sequence=$i";
+              i=$((i+1)); sleep 2; done
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: history-daemonset
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: history-job
+  namespace: default
+spec:
+  template:
+    metadata:
+      labels:
+        app: history-job
+        headlamp.dev/history-kind: Job
+        headlamp.dev/history-name: history-job
+    spec:
+      containers:
+        - name: emitter
+          image: busybox:1.37.0
+          env:
+            - name: GENERATION
+              value: v1
+          command:
+            - sh
+            - -c
+            - i=0; while [ "$i" -lt 600 ]; do echo "CONTEXT_HISTORY kind=Job
+              workload=history-job generation=$GENERATION pod=$HOSTNAME
+              utc=$(date -u +%Y-%m-%dT%H:%M:%SZ) sequence=$i"; i=$((i+1)); sleep
+              2; done
+      restartPolicy: Never
+  backoffLimit: 0
